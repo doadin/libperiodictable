@@ -47,9 +47,9 @@ function tprint (tbl, indent)
       print(formatting)
       tprint(v, indent+1)
     elseif type(v) == 'boolean' then
-      print(formatting .. tostring(v))      
+      print(formatting .. tostring(v))
     elseif type(v) == 'function' then
-      print(formatting .. tostring(v))      
+      print(formatting .. tostring(v))
     else
       print(formatting .. v)
     end
@@ -963,7 +963,7 @@ local GearSets_fixedids = {
 
 --Crafted. The miner chooses the wrong thing so we hardcode it
 	["The Unyielding"] = 570,
-	
+
 	["The Gladiator"] = 1,
 
 	["Battlegear of Undead Slaying"] = 533,
@@ -1255,7 +1255,7 @@ local GearSets_fixedids = {
 	["Regalia of the Horned Nightmare"] = {["528"] = -1045, ["540"] = -1068, ["553"] = 1181, ["566"] = -1022},
 	["Battleplate of the Prehistoric Marauder"] = {["528"] = -1046, ["540"] = -1069, ["553"] = 1180, ["566"] = -1023},
 	["Plate of the Prehistoric Marauder"] = {["528"] = -1047, ["540"] = -1070, ["553"] = 1179, ["566"] = -1024},
-	
+
 --T18
 	["Demongaze Armor"] = {["695"] = 1249, ["710"] = -1305, ["725"] = -1306, },
 	["Oathclaw Wargarb"] = {["695"] = 1250, ["710"] = -1307, ["725"] = -1308, },
@@ -1273,7 +1273,7 @@ local GearSets_fixedids = {
 
 --Negative values are for proper Currency items, positive values are for items that are used like currency
 local Currency_Items = {
-	
+
 	["Ancient Mana"] = -1155,
 	["Apexis Crystal"] = 32572,
 	["Apexis Shard"] = 32569,
@@ -1649,7 +1649,8 @@ handlers["^Consumable%.Bandage"] = function (set, data)
 	local views = get_page_listviews(WH2("bandages", nil, nil, filter))
 	for _, item in ipairs(views.items.data) do
 		local item_url = WH("item", item.id)
-		local item_page = getpage(item_url):gmatch("tooltip_enus = '<table>.-</table>'")() --Just focus on tooltip, otherwise it can match comments on the page
+		local full_page = getpage(item_url):gsub('\\', '') --Sometimes there are embedded backslashes, so remove those then allow normal logic to run
+		local item_page = full_page:match('tooltip_enus = "<table>.-</table>"') --Just focus on tooltip, otherwise it can match comments on the page
 		item_page = item_page:gsub("<!--.--->", "")	--remove off commented html tags
 		local heal = item_page:match("Heals (%d+) damage")
 		if heal then
@@ -1699,7 +1700,7 @@ end
 handlers["^Consumable%.Scroll"] = function (set, data)
 	local newset ={}
 	basic_listview_handler(WH2("other-consumables", "scroll", nil, {cr="161", crs="1"}), nil, nil, newset )
-	
+
 	table.sort(newset, sortSet)
 	return table.concat(newset, ",")
 
@@ -1817,7 +1818,7 @@ handlers["^GearSet"] = function (set, data)
 	else
 		local tiertag = set:match("(Tier %d+)")
 		if(tiertag and GearSets_tags[tiertag]) then
-			id = basic_listview_get_first_id(WH2("item-sets", setname, GearSets_tags[tiertag]))		
+			id = basic_listview_get_first_id(WH2("item-sets", setname, GearSets_tags[tiertag]))
 		else
 			id = basic_listview_get_first_id(WH2("item-sets", setname, nil))
 		end
@@ -2412,7 +2413,7 @@ handlers["Tradeskill%.Mat%.ByProfession%.Farming"] = function(set, data)
 	local newset = {}
 	basic_listview_handler(WH("items","0.0",{cr=107,crs=0,crv="Tilled Soil"}), nil, nil, newset)
 	basic_listview_handler(WH("items","0.0",{cr=104,crs=0,crv="sunsong"}), nil, nil, newset)
-	
+
 	table.sort(newset, sortSet)
 	return table.concat(newset, ",")
 
@@ -2505,7 +2506,7 @@ local function write_output(file, sets)
 	local f = assert(io.open(SOURCE, "w"))
 	for line in file:gmatch('([^\n]-\n)') do
 		local setname, spaces, set_data, comment = line:match('\t%[%"([^"]+)%"%]([^=]-)=%s-"([^"]-)",([^\n]-)\n')
-		
+
 		--If it's a properly formatted set line either write out the updated info (if any) or write the original line back out
 		if setname then
 			if sets[setname] then
