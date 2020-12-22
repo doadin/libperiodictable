@@ -96,7 +96,7 @@
 	["Consumable.Buff.Absorb.Self.Holy"]			= "6051:400,22847:3400",
 	["Consumable.Buff.Absorb.Self.Nature"]			= "6052:1800,13458:2600,22844:3400",
 	["Consumable.Buff.Absorb.Self.Shadow"]			= "6048:900,13459:2600,22846:3400",
-	["Consumable.Buff.Armor.Self"]				= "5997:50,3389:150,8951:250,13445:450,22834:550,4623:1000,13455:2000,22849:2500,40093:3500,58090:4800,76090:12000,152557:900",
+	["Consumable.Buff.Armor.Self"]				= "5997:50,3389:150,8951:250,13445:450,22834:550,4623:1000,13455:2000,22849:2500,40093:3500,58090:4800,76090:12000,152557:900,172347:32,172346:16",
 	["Consumable.Buff.Armor.Target"]			= "3013:65,1478:105,4421:150,10305:195,27500:240,33459:285,43467:340",
 	["Consumable.Buff.Attack Crit.Flask"]			= "32597:20,40212:200",
 	["Consumable.Buff.Attack Damage"]			= "23501:10,22788:40",
@@ -105,7 +105,7 @@
 	["Consumable.Buff.Attack Power.Target"]			= "12460:40",
 	["Consumable.Buff.Attack Speed.Self"]			= "29529:80,22838:400",
 	["Consumable.Buff.Attack Speed.Target"]			= "12450:3",
-	["Consumable.Buff.Chest"]				= "23559:200,25521:400",
+	["Consumable.Buff.Chest"]				= "23559:200,25521:400,172347:32,172346:16",
 	["Consumable.Buff.Defense.Self"]			= "22236:20,23435:20,49858:20,49860:20",
 	["Consumable.Buff.Defense.Flask"]			= "22851:10,32898:10",
 	["Consumable.Buff.Dodge.Target"]			= "12459:60",
@@ -295,11 +295,11 @@
 	["Consumable.Water.Percentage"]				= "19997:60,21241:60",
 
 	--!!Add to miner
-	["Consumable.Weapon Buff.Misc"]				= "3824,3829,31535,23123,34538,34539,44065",
+	["Consumable.Weapon Buff.Misc"]				= "3824,3829,31535,23123,34538,34539,44065,171286",
 	["Consumable.Weapon Buff.Oil.Mana"]			= "20745:4,20747:8,20748:12,22521:14",
 	["Consumable.Weapon Buff.Oil.Wizard"]			= "20744:8,20746:16,20750:24,20749:36,22522:42",
-	["Consumable.Weapon Buff.Stone.Sharpening Stone"]	= "23122,2862:2,2863:3,2871:4,7964:6,12404:8,18262,23528:12,23529:14",
-	["Consumable.Weapon Buff.Stone.Weight Stone"]		= "3239:2,3240:3,3241:4,7965:6,12643:8,28420:12,28421",
+	["Consumable.Weapon Buff.Stone.Sharpening Stone"]	= "23122,2862:2,2863:3,2871:4,7964:6,12404:8,18262,23528:12,23529:14,171436:16,171437:20,172038:12",
+	["Consumable.Weapon Buff.Stone.Weight Stone"]		= "3239:2,3240:3,3241:4,7965:6,12643:8,28420:12,28421:4,171438:16,171439:20",
 ]]
 
 --[[ CurrencyItems
