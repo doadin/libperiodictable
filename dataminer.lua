@@ -39,68 +39,6 @@ local function dprint(dlevel, ...)
 	end
 end
 
-function tprint (tbl, indent)
-  if not indent then indent = 0 end
-  for k, v in pairs(tbl) do
-    formatting = string.rep("  ", indent) .. k .. ": "
-    if type(v) == "table" then
-      print(formatting)
-      tprint(v, indent+1)
-    elseif type(v) == 'boolean' then
-      print(formatting .. tostring(v))
-    elseif type(v) == 'function' then
-      print(formatting .. tostring(v))
-    else
-      print(formatting .. v)
-    end
-  end
-end
-
-local function printdiff(set, old, new)
-	if DEBUG < 2 then return end
-	-- we remove the drop rate for these sets in the diff
-	-- because they are irrelevant to the comparison
-	local has_drop_rate = set:find("InstanceLoot", nil, true)
-			and not set:find("Trash Mobs", nil, true)
-	local temp = {}
-	local oldEntries = 0
-	local newEntries = 0
-	if old then
-		for entry in old:gmatch("[^,]+") do
-			oldEntries = oldEntries + 1
-			if has_drop_rate then entry = entry:match("(%d+):%d+") end
-			temp[entry] = (temp[entry] or 0) - 1
-		end
-	end
-	if new then
-		for entry in new:gmatch("[^,]+") do
-			newEntries = newEntries + 1
-			if has_drop_rate then entry = entry:match("(%d+):%d+") end
-			temp[entry] = (temp[entry] or 0) + 1
-		end
-	end
-	local added, removed = {}, {}
-	for entry, value in pairs(temp) do
-		if value > 0 then
-			added[#added + 1] = entry
-		elseif value < 0 then
-			removed[#removed + 1] = entry
-		end
-	end
-	if #added + #removed > 0 then
-		dprint(2, "CHANGED", set, "("..oldEntries.." -> "..newEntries..")")
-	end
-
-	if #removed > 0 then
-		table.sort(removed, sortSet_id)
-		dprint(2, "REMOVED", table.concat(removed, ","))
-	end
-	if #added > 0 then
-		table.sort(added, sortSet_id)
-		dprint(2, "ADDED", table.concat(added, ","))
-	end
-end
-
 local sets
 
 local json = require("json")
@@ -475,11 +413,11 @@ end
 
 -- Used to sort tables with values [-id|id][:value] using id as primary sort data
 local function sortSet_id(a, b)
-	local aId, aValue = a:match("(%-?%d+):")
-	local bId, bValue = b:match("(%-?%d+):")
+	local aId = a:match("^(%-?%d+):")
 	if (not aId) then
 		aId = a
 	end
+	local bId = b:match("^(%-?%d+):")
 	if (not bId) then
 		bId = b
 	end
@@ -487,6 +425,68 @@ local function sortSet_id(a, b)
 	bId = tonumber(bId)
 
 	return aId < bId
+end
+
+local function tprint (tbl, indent)
+	if not indent then indent = 0 end
+	for k, v in pairs(tbl) do
+		local formatting = string.rep("  ", indent) .. k .. ": "
+		if type(v) == "table" then
+			print(formatting)
+			tprint(v, indent+1)
+		elseif type(v) == 'boolean' then
+			print(formatting .. tostring(v))
+		elseif type(v) == 'function' then
+			print(formatting .. tostring(v))
+		else
+			print(formatting .. v)
+		end
+	end
+end
+
+local function printdiff(set, old, new)
+	if DEBUG < 2 then return end
+	-- we remove the drop rate for these sets in the diff
+	-- because they are irrelevant to the comparison
+	local has_drop_rate = set:find("InstanceLoot", nil, true)
+			and not set:find("Trash Mobs", nil, true)
+	local temp = {}
+	local oldEntries = 0
+	local newEntries = 0
+	if old then
+		for entry in old:gmatch("[^,]+") do
+			oldEntries = oldEntries + 1
+			if has_drop_rate then entry = entry:match("(%d+):%d+") end
+			temp[entry] = (temp[entry] or 0) - 1
+		end
+	end
+	if new then
+		for entry in new:gmatch("[^,]+") do
+			newEntries = newEntries + 1
+			if has_drop_rate then entry = entry:match("(%d+):%d+") end
+			temp[entry] = (temp[entry] or 0) + 1
+		end
+	end
+	local added, removed = {}, {}
+	for entry, value in pairs(temp) do
+		if value > 0 then
+			added[#added + 1] = entry
+		elseif value < 0 then
+			removed[#removed + 1] = entry
+		end
+	end
+	if #added + #removed > 0 then
+		dprint(2, "CHANGED", set, "("..oldEntries.." -> "..newEntries..")")
+	end
+
+	if #removed > 0 then
+		table.sort(removed, sortSet_id)
+		dprint(2, "REMOVED", table.concat(removed, ","))
+	end
+	if #added > 0 then
+		table.sort(added, sortSet_id)
+		dprint(2, "ADDED", table.concat(added, ","))
+	end
 end
 
 local function basic_itemid_handler(item)
@@ -567,6 +567,7 @@ local function basic_listview_get_id_by_name(url, name)
 	local _, view = next(views)
 	if not view then return end
 
+	local first_id
 	for _, entry in ipairs(view.data) do
 		if entry.name == name then
 			return entry.id
@@ -606,6 +607,12 @@ local Class_Skills_categories = {
 		Blood = "-12.6.250",
 		Frost = "-12.6.251",
 		Unholy = "-12.6.252",
+	},
+	["Demon Hunter"] = {
+		General = "7.12",
+		Talent = "-2.12",
+		Havoc = "-12.12.577",
+		Vengeance = "-12.12.581",
 	},
 	Druid = {
 		General = "7.11",
@@ -706,16 +713,16 @@ local Tradeskill_Tool_filters = {
 		{cr=91,crs=161,crv=0},-- Tool - Gnomish Army Knife
 	},]]--
 	Enchanting = {
-		{cr=91,crs=62,crv=0}, -- Tool - Runed Adamantite Rod
-		{cr=91,crs=10,crv=0}, -- Tool - Runed Arcanite Rod
-		{cr=91,crs=101,crv=0},-- Tool - Runed Azurite Rod
+		--{cr=91,crs=62,crv=0}, -- Tool - Runed Adamantite Rod
+		--{cr=91,crs=10,crv=0}, -- Tool - Runed Arcanite Rod
+		--{cr=91,crs=101,crv=0},-- Tool - Runed Azurite Rod
 		{cr=91,crs=6,crv=0},  -- Tool - Runed Copper Rod
-		{cr=91,crs=63,crv=0}, -- Tool - Runed Eternium Rod
-		{cr=91,crs=41,crv=0}, -- Tool - Runed Fel Iron Rod
-		{cr=91,crs=8,crv=0},  -- Tool - Runed Golden Rod
-		{cr=91,crs=7,crv=0},  -- Tool - Runed Silver Rod
-		{cr=91,crs=190,crv=0},-- Tool - Runed Titanium Rod [ckaotik]
-		{cr=91,crs=9,crv=0},  -- Tool - Runed Truesilver Rod
+		--{cr=91,crs=63,crv=0}, -- Tool - Runed Eternium Rod
+		--{cr=91,crs=41,crv=0}, -- Tool - Runed Fel Iron Rod
+		--{cr=91,crs=8,crv=0},  -- Tool - Runed Golden Rod
+		--{cr=91,crs=7,crv=0},  -- Tool - Runed Silver Rod
+		--{cr=91,crs=190,crv=0},-- Tool - Runed Titanium Rod
+		--{cr=91,crs=9,crv=0},  -- Tool - Runed Truesilver Rod
 	},
 	Engineering = {
 		{cr=91,crs=14,crv=0}, -- Tool - Arclight Spanner
@@ -808,6 +815,7 @@ local Tradeskill_Recipe_filters = {
 }
 
 local Tradeskill_Gather_GemsInNodes_nodes = {
+	-- classic
 	["Copper Vein"] = 1731,
 	["Incendicite Mineral Vein"] = 1610,
 	["Tin Vein"] = 1732,
@@ -827,32 +835,90 @@ local Tradeskill_Gather_GemsInNodes_nodes = {
 	["Small Thorium Vein"] = 324,
 	["Ooze Covered Rich Thorium Vein"] = 177388,
 	["Rich Thorium Vein"] = 175404,
+	-- BC
 	["Fel Iron Deposit"] = 181555,
 	["Nethercite Deposit"] = 185877,
-	["Large Obsidian Chunk"] = 181069,
 	["Small Obsidian Chunk"] = 181068,
+	["Large Obsidian Chunk"] = 181069,
 	["Adamantite Deposit"] = 181556,
-	["Cobalt Deposit"] = 189978,
 	["Rich Adamantite Deposit"] = 181569,
 	["Ancient Gem Vein"] = 185557,
 	["Khorium Vein"] = 181557,
+	-- WotLK
+	["Cobalt Deposit"] = 189978,
 	["Rich Cobalt Deposit"] = 189979,
 	["Saronite Deposit"] = 189980,
-	["Obsidium Deposit"] = 202736,
 	["Rich Saronite Deposit"] = 189981,
 	["Pure Saronite Deposit"] = 195036,
-	["Rich Obsidium Deposit"] = 202739,
 	["Titanium Vein"] = 191133,
+	-- Cata
+	["Obsidium Deposit"] = 202736,
+	["Rich Obsidium Deposit"] = 202739,
 	["Elementium Vein"] = 202738,
 	["Rich Elementium Vein"] = 202741,
 	["Pyrite Deposit"] = 202737,
 	["Rich Pyrite Deposit"] = 202740,
+	-- MoP
+	-- Ghost Iron Deposit {209311, 221538}
+	-- Rich Ghost Iron Deposit {209328, 221539}
+	-- Kyparite Deposit 209312
+	-- Rich Kyparite Deposit 209329
+	-- Trillium Vein {209313, 221541}
+	-- Rich Trillium Vein {209330, 221540}
 	["Ghost Iron Deposit"] = 209311,
 	["Rich Ghost Iron Deposit"] = 209328,
 	["Kyparite Deposit"] = 209312,
 	["Rich Kyparite Deposit"] = 209329,
 	["Trillium Vein"] = 209313,
 	["Rich Trillium Vein"] = 209330,
+
+	-- WoD
+	-- Blackrock Deposit {228563, 232542, 237359, 243313}
+	-- Rich Blackrock Deposit {228564, 232543, 237360, 243312}
+	-- True Iron Deposit {228493, 232544, 237358, 243314}
+	-- Rich True Iron Deposit {228510, 232545, 237357, 243315}
+	-- Smoldering True Iron Deposit 230428
+
+	-- Legion
+	-- Leystone Deposit 241726
+	-- Leystone Seam 253280
+	-- Rich Leystone Deposit 245324
+	-- Felslate Deposit 241743
+	-- Felslate Seam 255344
+	-- Felslate Spike 268901
+	-- Rich Felslate Deposit 245325
+	-- Brimstone Destroyer Core {247370, 247956, 247957, 247958, 247959, 247960, 247961, 247962, 247963, 247964, 247965, 247966, 247967, 247968, 247969,}
+	-- Empyrium Deposit 272768
+	-- Empyrium Seam 272780
+	-- Rich Empyrium Deposit 272778
+
+	-- BfA
+	-- Monelite Deposit 276616
+	-- Monelite Seam 276619
+	-- Rich Monelite Deposit 276621
+	-- Platinum Deposit 276618
+	-- Rich Platinum Deposit 276623
+	-- Storm Silver Deposit 276617
+	-- Storm Silver Seam 276620
+	-- Rich Storm Silver Deposit 276622
+
+	-- SL
+	-- Elethium Deposit 349900
+	-- Rich Elethium Deposit 350082
+	-- Laestrite Deposit 349898
+	-- Rich Laestrite Deposit 349899
+	-- Oxxein Deposit 349981
+	-- Rich Oxxein Deposit 350085
+	-- Phaedrum Deposit 349982, 355508
+	-- Rich Phaedrum Deposit 350087, 355507
+	-- Sinvyr Deposit 349983
+	-- Rich Sinvyr Deposit 350084
+	-- Solenium Deposit 349980
+	-- Rich Solenium Deposit 350086
+	-- Ligneous Phaedrum Deposit 356400
+	-- Luminous Solenium Deposit 356393
+	-- Menacing Sinvyr Deposit 356402
+	-- Monolithic Oxxein Deposit 356401
 }
 
 local Tradeskill_Profession_filters = {
@@ -1273,7 +1339,6 @@ local GearSets_fixedids = {
 
 --Negative values are for proper Currency items, positive values are for items that are used like currency
 local Currency_Items = {
-
 	["Ancient Mana"] = -1155,
 	["Apexis Crystal"] = 32572,
 	["Apexis Shard"] = 32569,
@@ -1465,8 +1530,8 @@ local is_lfr_item = function(item)
 end
 local is_normal_item = function(item, heroic, lfr)
 	local result
-	local heroic = heroic or is_heroic_item(item)
-	local lfr = lfr or is_lfr_item(item)
+	heroic = heroic or is_heroic_item(item)
+	lfr = lfr or is_lfr_item(item)
 	if bit then
 		result = bit.band(2+8+16, item.modes.mode) ~= 0 or (not heroic and not lfr)
 		-- item drops in normal 25, but not normal 10 - this is most likely a heroic item
@@ -1615,16 +1680,16 @@ end
 --end
 
 local Disenchant_urls = {
-	["Arcane Dust"] =  	"http://www.wowhead.com/items?filter=161:3:163;1:1:22445;0:0:0",
-	["Arkhana"] =  	"http://www.wowhead.com/items?filter=161:3:163;1:1:124440;0:0:0",
-	["Draenic Dust"] =  "http://www.wowhead.com/items?filter=161:3:163;1:1:109693;0:0:0",
-	["Hypnotic Dust"] =  "http://www.wowhead.com/items?filter=161:3:163;1:1:52555;0:0:0",
-	["Infinite Dust"] = "http://www.wowhead.com/items?filter=161:3:163;1:1:34054;0:0:0",
-	["Light Illusion Dust"] =   	"http://www.wowhead.com/items?filter=161:3:163;1:1:16204;0:0:0",
-	["Rich Illusion Dust"] =   "http://www.wowhead.com/items?filter=161:3:163;1:1:156930;0:0:0",
-	["Shadow Dust"] =     "http://www.wowhead.com/items?filter=161:3:163;1:1:152875;0:0:0",
-	["Spirit Dust"] =     "http://www.wowhead.com/items?filter=161:3:163;1:1:74249;0:0:0",
-	["Strange Dust"] =  "http://www.wowhead.com/items?filter=161:3:163;1:1:10940;0:0:0",
+	["Arcane Dust"] =         "http://www.wowhead.com/items?filter=161:3:163;1:1:22445;0:0:0",
+	["Arkhana"] =             "http://www.wowhead.com/items?filter=161:3:163;1:1:124440;0:0:0",
+	["Draenic Dust"] =        "http://www.wowhead.com/items?filter=161:3:163;1:1:109693;0:0:0",
+	["Hypnotic Dust"] =       "http://www.wowhead.com/items?filter=161:3:163;1:1:52555;0:0:0",
+	["Infinite Dust"] =       "http://www.wowhead.com/items?filter=161:3:163;1:1:34054;0:0:0",
+	["Light Illusion Dust"] = "http://www.wowhead.com/items?filter=161:3:163;1:1:16204;0:0:0",
+	["Rich Illusion Dust"] =  "http://www.wowhead.com/items?filter=161:3:163;1:1:156930;0:0:0",
+	["Shadow Dust"] =         "http://www.wowhead.com/items?filter=161:3:163;1:1:152875;0:0:0",
+	["Spirit Dust"] =         "http://www.wowhead.com/items?filter=161:3:163;1:1:74249;0:0:0",
+	["Strange Dust"] =        "http://www.wowhead.com/items?filter=161:3:163;1:1:10940;0:0:0",
 }
 
 handlers["^Disenchant%."] = function (set, data)
@@ -1636,7 +1701,6 @@ handlers["^Disenchant%."] = function (set, data)
 
 	table.sort(newset, sortSet)
 	return table.concat(newset, ",")
-
 end
 
 
@@ -1665,7 +1729,6 @@ end
 
 local both_buff_types
 handlers["^Consumable%.Buff Type"] = function (set, data)
-	local newset
 	local setname = set:match("%.([^%.]+)$")
 
 	local filter = Consumable_Buff_Type_filters[setname]
@@ -1709,7 +1772,7 @@ end
 
 local Consumable_Potion_Recovery_filters = {
 	["Rejuvenation.Basic"]		= {cr="107:107",		crs="0:0",		crv="health:mana"},
-	["Rejuvenation.Trance"] 	= {cr="107",			crs="0",		crv="puts the",									},
+	["Rejuvenation.Trance"] 	= {cr="107",			crs="0",		crv="puts the"},
 	["Healing.Zone-Restricted"]	= {cr="107:107:107",	crs="0:0:0",	crv="restores:health:only"},
 	["Healing.Endless"]			= {cr="107:107:104",	crs="0:0:0",	crv="restores:health:not+consumed"},
 	["Healing.Basic"]			= {cr="107:107",		crs="0:0",		crv="restores:health",					excludes={"Healing.Zone-Restricted","Healing.Endless","Rejuvenation.Basic","Rejuvenation.Trance"}},
@@ -1719,7 +1782,6 @@ local Consumable_Potion_Recovery_filters = {
 }
 
 handlers["^Consumable%.Potion%.Recovery"] = function (set, data)
-
 	local setName = set:match("%.([^%.]+%.[^%.]+)$")
 	if not setName then return end
 
@@ -1739,7 +1801,6 @@ handlers["^Consumable%.Potion%.Recovery"] = function (set, data)
 			return item.id..":"..item.level
 		end
 	end)
-
 end
 
 handlers["^CurrencyItems"] = function (set, data)
@@ -1755,7 +1816,6 @@ handlers["^CurrencyItems"] = function (set, data)
 					break
 				end
 			end
-			if not count then print(itemstr) end
 			return item.id..":"..count
 		end, "currency-for")
 	else
@@ -1768,7 +1828,6 @@ handlers["^CurrencyItems"] = function (set, data)
 					break
 				end
 			end
-			if not count then print(itemstr) end
 			return item.id..":"..count
 		end, "items")
 	end
@@ -1958,6 +2017,7 @@ handlers["^InstanceLoot%."] = function (set, data)
 			return item.id..":"..droprate
 		end
 
+		local totaldrops
 		for id, view in pairs(views) do
 			if id == "contains" or id == "drops" then
 				totaldrops = view.count
@@ -2019,6 +2079,7 @@ handlers["^InstanceLootHeroic%."] = function (set, data)
 			return item.id..":"..droprate
 		end
 
+		local totaldrops
 		for id, view in pairs(views) do
 			if id == "contains" or	id == "drops" then
 				totaldrops = view.count
@@ -2075,6 +2136,7 @@ handlers["^InstanceLootLFR%."] = function (set, data)
 			return item.id..":"..droprate
 		end
 
+		local totaldrops
 		for id, view in pairs(views) do
 			if id == "contains" or	id == "drops" then
 				totaldrops = view.count
@@ -2112,7 +2174,6 @@ handlers["^Misc%.Bag%."] = function (set, data)
 end
 
 handlers["^Misc%.Container%.ItemsInType"] = function (set, data)
-	local newset = {}
 	local container = set:match("%.([^%.]+)$")
 	local container_id = Containers_ItemsInType_items[container]
 	if not container_id then return end
@@ -2130,18 +2191,16 @@ handlers["^Misc%.Openable"] = function (set, data)
 end
 
 handlers["^Misc%.Key"] = function (set, data)
-	local setname = set:match("%.([^%.]+)$")
-	return basic_listview_handler(WH("items", 13), nil, nil, newset)
+	return basic_listview_handler(WH("items", 13))
 end
 
 handlers["^Misc%.Tabard"] = function (set, data)
-	local setname = set:match("%.([^%.]+)$")
-	return basic_listview_handler(WH("items", nil, {sl=19,cr=161;crs=1;crv=0}), nil, nil, newset)
+	return basic_listview_handler(WH("items", nil, {sl=19,cr=161;crs=1;crv=0}))
 end
 
 handlers["^Misc%.Lockboxes"] = function (set, data)
 	return basic_listview_handler(WH("items", nil, {cr=10,crs=1,crv=0}), function (item)
-		page = getpage(WH("item", item.id).."&xml") -- hack
+		local page = getpage(WH("item", item.id).."&xml") -- hack
 		local skill = page:match("Requires Lockpicking %((%d+)%)") or 0
 		if skill then
 			return item.id..":"..skill
@@ -2153,7 +2212,7 @@ end
 
 handlers["^Consumable.Food.Edible.Combo.Conjured"] = function (set, data)
 	return basic_listview_handler(WH("items", "0.5", {cr="9:107:107";crs="1:0:0";crv="0:health:mana"}), function (item)
-		page = getpage(WH("item", item.id).."&xml") -- hack
+		local page = getpage(WH("item", item.id).."&xml") -- hack
 		local mana = page:match("health and (%d+)%%* [Mm]ana")
 		if mana then
 			return item.id..":"..mana
@@ -2164,9 +2223,8 @@ handlers["^Consumable.Food.Edible.Combo.Conjured"] = function (set, data)
 end
 
 handlers["^Misc%.Minipet%."] = function (set, data)
-	local count = 0
 	local src = set:match("^Misc%.Minipet%.(.+)$")
-	filter = Minipet_filters[src]
+	local filter = Minipet_filters[src]
 	if not filter then return end
 
 	return basic_listview_handler(WH("items", "15.2", filter),
@@ -2176,7 +2234,6 @@ handlers["^Misc%.Minipet%."] = function (set, data)
 end
 
 handlers["^Misc%.Mount%."] = function (set, data)
-	local count = 0
 	local category = set:match("^Misc%.Mount%.([^%.]+)$")
 	category = Mount_filter_categories[category]
 	if not category then return end
@@ -2297,7 +2354,6 @@ handlers["^Tradeskill%.Crafted"] = function (set, data)
 end
 
 handlers["^Tradeskill%.Gather%."] = function (set, data)
-	local count = 0
 	if set:match("^Tradeskill%.Gather%.GemsInNodes") then
 		local nodetype = set:match("%.([^%.]+)$")
 		local id = Tradeskill_Gather_GemsInNodes_nodes[nodetype]
@@ -2420,10 +2476,9 @@ handlers["Tradeskill%.Mat%.ByProfession%.Farming"] = function(set, data)
 end
 
 handlers["^Tradeskill%.Recipe%."] = function (set, data)
-	local count = 0
 	local profession, src = set:match("^Tradeskill%.Recipe%.([^%.]+)%.(.+)$")
 	profession = Tradeskill_Recipe_categories[profession]
-	filter = Tradeskill_Recipe_filters[src]
+	local filter = Tradeskill_Recipe_filters[src]
 	if not profession or not filter then return end
 
 	return basic_listview_handler(WH("items", profession, filter),
@@ -2432,7 +2487,6 @@ end
 
 handlers["^Tradeskill%.Tool"] = function (set, data)
 	local newset = {}
-	local count = 0
 	local profession = set:match("^Tradeskill%.Tool%.(.+)$")
 	local filters = Tradeskill_Tool_filters[profession]
 	if not filters then return end
