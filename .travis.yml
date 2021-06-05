@@ -8,8 +8,8 @@ env:
 
 before_install:
   - sudo apt-get install luarocks
-  - luarocks install luasocket
-  - luarocks install luabitop
+  - sudo luarocks install luasocket
+  - sudo luarocks install luabitop
 
 install:
   - luarocks make
