@@ -11,8 +11,5 @@ before_install:
   - sudo luarocks install luasocket
   - sudo luarocks install luabitop
 
-install:
-  - luarocks make
-
 script:
   - lua dataminer.lua
